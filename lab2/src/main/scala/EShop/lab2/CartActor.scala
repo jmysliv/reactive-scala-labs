@@ -33,10 +33,7 @@ class CartActor extends Actor {
   implicit val executionContext: ExecutionContextExecutor = context.system.dispatcher
   private def scheduleTimer: Cancellable                  = context.system.scheduler.scheduleOnce(cartTimerDuration, self, ExpireCart)
 
-  def receive: Receive = LoggingReceive {
-    case AddItem(item) =>
-      context.become(nonEmpty(Cart.empty.addItem(item), scheduleTimer))
-  }
+  def receive: Receive = empty
 
   def empty: Receive = LoggingReceive {
     case AddItem(item) =>
@@ -45,7 +42,7 @@ class CartActor extends Actor {
 
   def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
     case RemoveItem(item) =>
-      if( cart.contains(item)){
+      if (cart.contains(item)) {
         val newCart = cart.removeItem(item)
         if (newCart.size == 0) {
           context.become(empty)
