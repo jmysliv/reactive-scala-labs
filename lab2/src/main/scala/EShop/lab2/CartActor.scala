@@ -1,8 +1,9 @@
 package EShop.lab2
 
-import akka.actor.{Actor, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable, Props}
 import akka.event.{Logging, LoggingReceive}
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -29,14 +30,60 @@ class CartActor extends Actor {
   private val log       = Logging(context.system, this)
   val cartTimerDuration = 5 seconds
 
-  private def scheduleTimer: Cancellable = ???
+  implicit val executionContext: ExecutionContextExecutor = context.system.dispatcher
+  private def scheduleTimer: Cancellable                  = context.system.scheduler.scheduleOnce(cartTimerDuration, self, ExpireCart)
 
-  def receive: Receive = ???
+  def receive: Receive = LoggingReceive {
+    case AddItem(item) =>
+      context.become(nonEmpty(Cart.empty.addItem(item), scheduleTimer))
+  }
 
-  def empty: Receive = ???
+  def empty: Receive = LoggingReceive {
+    case AddItem(item) =>
+      context.become(nonEmpty(Cart.empty.addItem(item), scheduleTimer))
+  }
 
-  def nonEmpty(cart: Cart, timer: Cancellable): Receive = ???
+  def nonEmpty(cart: Cart, timer: Cancellable): Receive = LoggingReceive {
+    case RemoveItem(item) =>
+      if( cart.contains(item)){
+        val newCart = cart.removeItem(item)
+        if (newCart.size == 0) {
+          context.become(empty)
+        } else {
+          context.become(nonEmpty(newCart, timer))
+        }
+      }
+    case AddItem(item) =>
+      context.become(nonEmpty(cart.addItem(item), timer))
+    case StartCheckout =>
+      context.become(inCheckout(cart))
+    case ExpireCart =>
+      context.become(empty)
+  }
 
-  def inCheckout(cart: Cart): Receive = ???
+  def inCheckout(cart: Cart): Receive = LoggingReceive {
+    case ConfirmCheckoutCancelled =>
+      context.become(nonEmpty(cart, scheduleTimer))
+    case ConfirmCheckoutClosed =>
+      context.become(empty)
+  }
+}
 
+object CartApp extends App {
+  import CartActor._
+
+  val system    = ActorSystem("CartActor")
+  val cartActor = system.actorOf(Props[CartActor])
+
+  cartActor ! AddItem(5)
+  cartActor ! RemoveItem(5)
+  cartActor ! AddItem(2)
+  cartActor ! AddItem(5)
+  cartActor ! RemoveItem(5)
+  cartActor ! StartCheckout
+  cartActor ! ConfirmCheckoutClosed
+
+  import scala.concurrent.Await
+
+  Await.result(system.whenTerminated, Duration.Inf)
 }
