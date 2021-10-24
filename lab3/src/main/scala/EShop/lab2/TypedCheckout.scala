@@ -1,6 +1,6 @@
 package EShop.lab2
 
-import EShop.lab3.{OrderManager, Payment}
+import EShop.lab3.{Payment}
 import akka.actor.Cancellable
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, Behavior}
