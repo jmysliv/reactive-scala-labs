@@ -40,62 +40,66 @@ class TypedCheckout(cartActor: ActorRef[TypedCartActor.Command]) {
     context.scheduleOnce(paymentTimerDuration, context.self, ExpirePayment)
 
   def start: Behavior[Command] =
-    Behaviors.receive[Command]((context, command) =>
-      command match {
-        case StartCheckout =>
-          selectingDelivery(scheduleCheckoutTimer(context))
+    Behaviors.receive[Command](
+      (context, command) =>
+        command match {
+          case StartCheckout =>
+            selectingDelivery(scheduleCheckoutTimer(context))
       }
     )
 
   def selectingDelivery(timer: Cancellable): Behavior[Command] =
-    Behaviors.receive[Command]((context, command) =>
-      command match {
-        case SelectDeliveryMethod(_) =>
-          timer.cancel()
-          selectingPaymentMethod(scheduleCheckoutTimer(context))
-        case ExpireCheckout =>
-          timer.cancel()
-          cancelled
-        case CancelCheckout =>
-          timer.cancel()
-          cancelled
+    Behaviors.receive[Command](
+      (context, command) =>
+        command match {
+          case SelectDeliveryMethod(_) =>
+            timer.cancel()
+            selectingPaymentMethod(scheduleCheckoutTimer(context))
+          case ExpireCheckout =>
+            timer.cancel()
+            cancelled
+          case CancelCheckout =>
+            timer.cancel()
+            cancelled
       }
     )
 
   def selectingPaymentMethod(timer: Cancellable): Behavior[Command] =
-    Behaviors.receive[Command]((context, command) =>
-      command match {
-        case SelectPayment(payment, orderManagerRef) =>
-          timer.cancel()
-          val paymentEventMapper: ActorRef[Payment.Event] = context.messageAdapter {
-            case Payment.PaymentReceived =>
-              ConfirmPaymentReceived
-          }
-          val paymentActor = context.spawn(new Payment(payment, orderManagerRef, context.self).start, "paymentActor")
-          orderManagerRef ! OrderManager.ConfirmPaymentStarted(paymentActor)
-          processingPayment(schedulePaymentTimer(context))
-        case ExpireCheckout =>
-          timer.cancel()
-          cancelled
-        case CancelCheckout =>
-          timer.cancel()
-          cancelled
+    Behaviors.receive[Command](
+      (context, command) =>
+        command match {
+          case SelectPayment(payment, orderManagerRef) =>
+            timer.cancel()
+            val paymentEventMapper: ActorRef[Payment.Event] = context.messageAdapter {
+              case Payment.PaymentReceived =>
+                ConfirmPaymentReceived
+            }
+            val paymentActor = context.spawn(new Payment(payment, orderManagerRef, context.self).start, "paymentActor")
+            orderManagerRef ! OrderManager.ConfirmPaymentStarted(paymentActor)
+            processingPayment(schedulePaymentTimer(context))
+          case ExpireCheckout =>
+            timer.cancel()
+            cancelled
+          case CancelCheckout =>
+            timer.cancel()
+            cancelled
       }
     )
 
   def processingPayment(timer: Cancellable): Behavior[Command] =
-    Behaviors.receive[Command]((_, command) =>
-      command match {
-        case ConfirmPaymentReceived =>
-          timer.cancel()
-          cartActor ! TypedCartActor.ConfirmCheckoutClosed
-          closed
-        case ExpirePayment =>
-          timer.cancel()
-          cancelled
-        case CancelCheckout =>
-          timer.cancel()
-          cancelled
+    Behaviors.receive[Command](
+      (_, command) =>
+        command match {
+          case ConfirmPaymentReceived =>
+            timer.cancel()
+            cartActor ! TypedCartActor.ConfirmCheckoutClosed
+            closed
+          case ExpirePayment =>
+            timer.cancel()
+            cancelled
+          case CancelCheckout =>
+            timer.cancel()
+            cancelled
       }
     )
 

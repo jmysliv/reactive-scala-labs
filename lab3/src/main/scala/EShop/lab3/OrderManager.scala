@@ -91,6 +91,9 @@ class OrderManager {
           case ConfirmPaymentStarted(paymentRef) =>
             senderRef ! Done
             inPayment(paymentRef, senderRef)
+          case ConfirmPaymentReceived =>
+            senderRef ! Done
+            finished
       }
     )
 
@@ -103,10 +106,7 @@ class OrderManager {
         command match {
           case Pay(sender) =>
             paymentActorRef ! Payment.DoPayment
-            Behaviors.same
-          case ConfirmPaymentReceived =>
-            senderRef ! Done
-            finished
+            inPayment(sender)
       }
     )
 
