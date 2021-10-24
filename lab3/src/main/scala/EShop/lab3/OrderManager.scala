@@ -1,5 +1,6 @@
 package EShop.lab3
 
+import EShop.lab2
 import EShop.lab2.{TypedCartActor, TypedCheckout}
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
@@ -78,15 +79,19 @@ class OrderManager {
       (context, command) =>
         command match {
           case SelectDeliveryAndPaymentMethod(delivery, payment, sender) =>
+            val checkoutEventMapper: ActorRef[TypedCheckout.Event] = context.messageAdapter {
+              case TypedCheckout.PaymentStarted(paymentRef) =>
+                ConfirmPaymentStarted(paymentRef)
+            }
             checkoutActorRef ! TypedCheckout.SelectDeliveryMethod(delivery)
-            checkoutActorRef ! TypedCheckout.SelectPayment(payment, context.self)
+            checkoutActorRef ! TypedCheckout.SelectPayment(payment, checkoutEventMapper)
             inPayment(sender)
       }
     )
 
   def inPayment(senderRef: ActorRef[Ack]): Behavior[OrderManager.Command] =
     Behaviors.receive[Command](
-      (context, command) =>
+      (_, command) =>
         command match {
           case ConfirmPaymentStarted(paymentRef) =>
             senderRef ! Done
@@ -105,7 +110,11 @@ class OrderManager {
       (context, command) =>
         command match {
           case Pay(sender) =>
-            paymentActorRef ! Payment.DoPayment
+            val paymentEventMapper: ActorRef[Payment.Event] = context.messageAdapter {
+              case Payment.PaymentReceived =>
+                ConfirmPaymentReceived
+            }
+            paymentActorRef ! Payment.DoPayment(paymentEventMapper)
             inPayment(sender)
       }
     )

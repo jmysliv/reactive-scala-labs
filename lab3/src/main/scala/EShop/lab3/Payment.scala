@@ -7,7 +7,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 object Payment {
 
   sealed trait Command
-  case object DoPayment extends Command
+  case class DoPayment(orderManagerRef: ActorRef[Event]) extends Command
 
   sealed trait Event
   case object PaymentReceived extends Event
@@ -15,8 +15,7 @@ object Payment {
 
 class Payment(
   method: String,
-  orderManager: ActorRef[OrderManager.Command],
-  checkout: ActorRef[TypedCheckout.Command]
+  checkout: ActorRef[Payment.Event]
 ) {
 
   import Payment._
@@ -25,9 +24,9 @@ class Payment(
     Behaviors.receive(
       (context, command) =>
         command match {
-          case DoPayment =>
-            orderManager ! OrderManager.ConfirmPaymentReceived
-            checkout ! TypedCheckout.ConfirmPaymentReceived
+          case DoPayment(orderManagerRef) =>
+            orderManagerRef ! PaymentReceived
+            checkout ! PaymentReceived
             Behaviors.stopped
       }
     )
