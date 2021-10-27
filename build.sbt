@@ -24,5 +24,3 @@ libraryDependencies ++= Seq(
 
 // scalaFmt
 scalafmtOnCompile := true
-
-fork := true
