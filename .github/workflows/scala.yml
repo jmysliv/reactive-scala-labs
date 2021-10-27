@@ -18,9 +18,5 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: Run lab2 tests
-      working-directory: lab2
-      run: sbt test
-    - name: Run lab3 tests
-      working-directory: lab3
+    - name: Run tests
       run: sbt test

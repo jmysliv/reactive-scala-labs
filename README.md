@@ -1,2 +1,1 @@
-# reactive-scala-labs
-
+# reactive-lab
