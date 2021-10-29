@@ -1,6 +1,7 @@
 package EShop.lab4
 
-import EShop.lab2.TypedCartActor
+import EShop.lab2
+import EShop.lab2.{TypedCartActor, TypedCheckout}
 import EShop.lab3.OrderManager
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
@@ -22,9 +23,9 @@ class PersistentCheckoutTest
 
   import EShop.lab2.TypedCheckout._
 
-  private val cartActorProbe = testKit.createTestProbe[TypedCartActor.Command]()
+  private val cartActorProbe = testKit.createTestProbe[TypedCheckout.Event]()
 
-  private val orderManagerProbe = testKit.createTestProbe[OrderManager.Command]
+  private val orderManagerProbe = testKit.createTestProbe[TypedCheckout.Event]
 
   private val eventSourcedTestKit =
     EventSourcedBehaviorTestKit[Command, Event, State](
