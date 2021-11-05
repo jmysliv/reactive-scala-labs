@@ -216,11 +216,7 @@ object TypedCheckoutTest {
   def checkoutActorWithResponseOnStateChange(
     testkit: ActorTestKit,
     probe: ActorRef[String],
-<<<<<<< HEAD
-    cartActorProbe: ActorRef[TypedCartActor.Command]
-=======
     cartActorProbe: ActorRef[TypedCheckout.Event]
->>>>>>> master
   ): ActorRef[TypedCheckout.Command] =
     testkit.spawn {
       val checkout = new TypedCheckout(cartActorProbe) {
