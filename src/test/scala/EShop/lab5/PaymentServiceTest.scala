@@ -4,14 +4,7 @@ import EShop.lab5.PaymentService.{PaymentClientError, PaymentServerError, Paymen
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ChildFailed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
-import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.flatspec.AnyFlatSpecLike
-import org.scalatest.matchers.should.Matchers
-
-import scala.concurrent.duration._
-import scala.concurrent.Future
 
 class PaymentServiceTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike {
 
@@ -23,7 +16,7 @@ class PaymentServiceTest extends ScalaTestWithActorTestKit with AnyFlatSpecLike 
     probe.expectMessage(PaymentSucceeded)
   }
 
-  it should "fail if response from external payment http server returned 408 (Request Timeout)" in {
+  it should "fail if response from external payment http server returned 500" in {
     val probe   = testKit.createTestProbe[PaymentService.Response]()
     val failure = testKit.createTestProbe[String]()
 
