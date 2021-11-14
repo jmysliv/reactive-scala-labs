@@ -9,7 +9,6 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 
 object TypedCheckout {
-
   sealed trait Data
   case object Uninitialized                               extends Data
   case class SelectingDeliveryStarted(timer: Cancellable) extends Data
@@ -23,6 +22,8 @@ object TypedCheckout {
   case class SelectPayment(payment: String, orderManagerRef: ActorRef[Event]) extends Command
   case object ExpirePayment                                                   extends Command
   case object ConfirmPaymentReceived                                          extends Command
+  case object PaymentRejected                                                 extends Command
+  case object PaymentRestarted                                                extends Command
 
   sealed trait Event
   case object CheckOutClosed                                    extends Event
