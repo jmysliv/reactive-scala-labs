@@ -2,14 +2,13 @@ package EShop.lab5
 
 import EShop.lab2.TypedCheckout
 import EShop.lab3.OrderManager
-import EShop.lab5.Payment.{PaymentRejected, WrappedPaymentServiceResponse}
-import EShop.lab5.PaymentService.{PaymentClientError, PaymentServerError, PaymentSucceeded}
-import akka.actor.typed.{ActorRef, Behavior, ChildFailed, SupervisorStrategy}
+import EShop.lab3.OrderManager.ConfirmPaymentReceived
+import EShop.lab5.PaymentService.PaymentSucceeded
+import akka.actor.typed.{ActorRef, Behavior, SupervisorStrategy, Terminated}
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.StreamTcpException
+import akka.http.scaladsl.model.HttpResponse
 
 import scala.concurrent.duration._
-import akka.actor.typed.Terminated
 
 object Payment {
   sealed trait Message
@@ -27,15 +26,28 @@ object Payment {
     checkout: ActorRef[TypedCheckout.Command]
   ): Behavior[Message] =
     Behaviors
-      .receive[Message](
-        (context, msg) =>
-          msg match {
-            case DoPayment                                       => ???
-            case WrappedPaymentServiceResponse(PaymentSucceeded) => ???
+      .receive[Message]((context, msg) =>
+        msg match {
+          case DoPayment =>
+            val paymentResponseMapper: ActorRef[PaymentService.Response] =
+              context.messageAdapter(rsp => WrappedPaymentServiceResponse(rsp))
+            val supervisor = context.spawn(
+              Behaviors
+                .supervise[HttpResponse](PaymentService(method, paymentResponseMapper))
+                .onFailure[Exception](restartStrategy),
+              "supervisor"
+            )
+            context.watch(supervisor)
+            Behaviors.same
+          case WrappedPaymentServiceResponse(PaymentSucceeded) =>
+            orderManager ! ConfirmPaymentReceived
+            Behaviors.same
         }
       )
       .receiveSignal {
-        case (context, Terminated(t)) => ???
+        case (context, Terminated(t)) =>
+          notifyAboutRejection(orderManager, checkout)
+          Behaviors.same
       }
 
   // please use this one to notify when supervised actor was stoped
