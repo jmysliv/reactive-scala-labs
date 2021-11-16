@@ -20,22 +20,22 @@ class ProductCatalogRemoteTest extends AsyncFlatSpecLike with Matchers {
     val config = ConfigFactory.load()
 
     val actorSystem =
-      ActorSystem[Nothing](
-        Behaviors.empty,
-        "ProductCatalogCluster",
-        config.getConfig("productcatalog").withFallback(config)
-      )
+      ActorSystem[Nothing](Behaviors.empty, "ProductCatalog", config.getConfig("productcatalog").withFallback(config))
     actorSystem.systemActorOf(ProductCatalog(new SearchService()), "productcatalog")
 
     val anotherActorSystem =
-      ActorSystem[Nothing](Behaviors.empty, "ProductCatalogCluster")
+      ActorSystem[Nothing](
+        Behaviors.empty,
+        "ProductCatalog",
+        config.getConfig("productcatalogserver").withFallback(config)
+      )
     implicit val scheduler = anotherActorSystem.scheduler
 
     // wait for the cluster to form up
-    Thread.sleep(3000)
+    Thread.sleep(10000)
 
-    val listingFuture = anotherActorSystem.receptionist.ask(
-      (ref: ActorRef[Receptionist.Listing]) => Receptionist.find(ProductCatalog.ProductCatalogServiceKey, ref)
+    val listingFuture = anotherActorSystem.receptionist.ask((ref: ActorRef[Receptionist.Listing]) =>
+      Receptionist.find(ProductCatalog.ProductCatalogServiceKey, ref)
     )
 
     for {
@@ -44,8 +44,6 @@ class ProductCatalogRemoteTest extends AsyncFlatSpecLike with Matchers {
       items <- productCatalog.ask(ref => GetItems("gerber", List("cream"), ref)).mapTo[ProductCatalog.Items]
       _ = actorSystem.terminate()
       _ = anotherActorSystem.terminate()
-    } yield {
-      assert(items.items.size == 10)
-    }
+    } yield assert(items.items.size == 10)
   }
 }
