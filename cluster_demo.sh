@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
 
-# first create ClusterWorkRouters cluster
-sbt "runMain EShop.lab6.ClusterNodeApp seed-node1" &
-sbt "runMain EShop.lab6.ClusterNodeApp seed-node2" &
-sbt "runMain EShop.lab6.ClusterNodeApp" & #just the node on random port
+sbt "runMain EShop.lab6.ProductCatalogWorkerNode seed-node1" &
+sbt "runMain EShop.lab6.ProductCatalogWorkerNode seed-node2" &
+sbt "runMain EShop.lab6.ProductCatalogWorkerNode seed-node3" &
 
-# cluster at this point should be up and running
 
-# starting http servers which will also create routers with workers deployed on previously configured cluster
-sbt "runMain EShop.lab6.WorkHttpClusterApp 9001" &
-sbt "runMain EShop.lab6.WorkHttpClusterApp 9002" &
-sbt "runMain EShop.lab6.WorkHttpClusterApp 9003" &
+sbt "runMain EShop.lab6.ProductCatalogServerNodeApp 1" &
+sbt "runMain EShop.lab6.ProductCatalogServerNodeApp 2" &
+sbt "runMain EShop.lab6.ProductCatalogServerNodeApp 3" &
 
+sbt "runMain EShop.lab6.CounterWorkerApp" &
 
 # start gatling tests
 #sbt gatling-it:test
