@@ -61,6 +61,7 @@ object ProductCatalog {
   def apply(searchService: SearchService): Behavior[Query] =
     Behaviors.setup { context =>
       context.system.receptionist ! Receptionist.register(ProductCatalogServiceKey, context.self)
+      context.log.info("Product catalog worker spawned")
 
       Behaviors.receiveMessage {
         case GetItems(brand, productKeyWords, sender) =>
